@@ -1,6 +1,5 @@
-streamlit
+streamlit==1.25.0
 tensorflow==2.16.1
 numpy
 pillow
 streamlit-lottie
-gdown
