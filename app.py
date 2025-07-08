@@ -11,7 +11,7 @@ from streamlit_lottie import st_lottie
 st.set_page_config(page_title="Rice Type Classifier", page_icon="🍚", layout="centered")
 
 # Load model and labels
-model = load_model("rice_classification_cnn.h5")
+model = load_model("J:/aimicrodeegree/HEENA/New_Rice_Classification_Model/rice_classification_streamlit/rice_classification_cnn.h5")
 labels = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
 
 # Load Lottie animations
