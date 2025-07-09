@@ -6,6 +6,10 @@ import os
 import json
 import time
 from streamlit_lottie import st_lottie
+from streamlit_autorefresh import st_autorefresh
+
+# Auto-refresh every 1400 milliseconds (1.4 seconds)
+st_autorefresh(interval=1400, key="anim_refresh")
 
 # Page Setup
 st.set_page_config(page_title="Rice Type Classifier", page_icon="🍚", layout="centered")
@@ -19,7 +23,7 @@ if not os.path.exists(model_path):
 session = ort.InferenceSession(model_path)
 input_name = session.get_inputs()[0].name
 
-# Label list
+# Labels
 labels = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
 
 # Load Lottie animations
@@ -33,15 +37,12 @@ animations = [
     load_lottie("ricecake.json")
 ]
 
-# Animation loop state
+# Animation index cycling
 if "anim_index" not in st.session_state:
     st.session_state.anim_index = 0
-    st.session_state.last_switch = time.time()
-
-# Switch every 1.4 seconds
-if time.time() - st.session_state.last_switch > 1.4:
+else:
+    # Cycle animation index on every rerun caused by autorefresh
     st.session_state.anim_index = (st.session_state.anim_index + 1) % len(animations)
-    st.session_state.last_switch = time.time()
 
 # ---------------- Custom CSS ----------------
 st.markdown("""
