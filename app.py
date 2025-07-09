@@ -1,8 +1,8 @@
 import streamlit as st
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
+import onnxruntime as ort
 from PIL import Image
 import numpy as np
+import os
 import json
 import time
 from streamlit_lottie import st_lottie
@@ -10,10 +10,16 @@ from streamlit_lottie import st_lottie
 # Page Setup
 st.set_page_config(page_title="Rice Type Classifier", page_icon="🍚", layout="centered")
 
-# Load model and labels
-model_path = "rice_classification_cnn.h5"
+# Load ONNX model
+model_path = "rice_model.onnx"
 if not os.path.exists(model_path):
-    gdown.download("https://drive.google.com/uc?id=1hmBSIgPc4zoxg2kFDbYlnxvy5RP4Kl7R", model_path, quiet=False)
+    st.error("Model file not found. Please make sure 'rice_model.onnx' exists in the app directory.")
+    st.stop()
+
+session = ort.InferenceSession(model_path)
+input_name = session.get_inputs()[0].name
+
+# Label list
 labels = ['Arborio', 'Basmati', 'Ipsala', 'Jasmine', 'Karacadag']
 
 # Load Lottie animations
@@ -40,7 +46,6 @@ if time.time() - st.session_state.last_switch > 1.4:
 # ---------------- Custom CSS ----------------
 st.markdown("""
     <style>
-        /* Remove all top spacing */
         html, body, .main, .block-container {
             padding-top: 0 !important;
             margin-top: 0 !important;
@@ -131,7 +136,7 @@ st.markdown("<div class='fade-container'>", unsafe_allow_html=True)
 st_lottie(animations[st.session_state.anim_index], height=200, key="lottie-loop")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Title stays independent
+# Title
 st.markdown("<div class='title'>🍚 Rice Type Classifier</div>", unsafe_allow_html=True)
 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -141,19 +146,23 @@ uploaded_file = st.file_uploader("", type=["jpg", "jpeg", "png"])
 
 # ---------------- Prediction Section ----------------
 if uploaded_file:
-    img = Image.open(uploaded_file)
+    img = Image.open(uploaded_file).convert("RGB")
     st.image(img, caption="📸 Uploaded Image", use_column_width=True)
 
-    # Preprocessing
-    img_resized = img.resize((100, 100))
-    img_array = image.img_to_array(img_resized) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    # Preprocess
+    img_resized = img.resize((100, 100))  # Resize to model input size
+    img_array = np.asarray(img_resized).astype(np.float32) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
 
-    # Predict
-    pred = model.predict(img_array)
-    class_index = np.argmax(pred)
-    predicted_class = labels[class_index]
-    confidence = float(np.max(pred)) * 100
+    # ONNX Prediction
+    try:
+        pred = session.run(None, {input_name: img_array})[0]
+        class_index = int(np.argmax(pred))
+        predicted_class = labels[class_index]
+        confidence = float(np.max(pred)) * 100
+    except Exception as e:
+        st.error(f"Error during model inference: {e}")
+        st.stop()
 
     # Results
     st.markdown("<div class='section-title'>🔍 Prediction Result</div>", unsafe_allow_html=True)
@@ -173,5 +182,3 @@ if uploaded_file:
 
 else:
     st.info("Please Upload an Image to Get Started.")
-    time.sleep(1)
-    st.rerun()
