@@ -1,6 +1,5 @@
 streamlit==1.29.0
-tensorflow==2.13.0
+onnxruntime==1.17.3
 numpy
-pillow
+Pillow
 streamlit-lottie
-
